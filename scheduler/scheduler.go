@@ -81,7 +81,7 @@ func (s *Scheduler) PrioritizeCandidates(resourceRequests []ResourceRequest, con
 	return filteredHosts, nil
 }
 
-func (s *Scheduler) ReserveResources(hostID string, force bool, resourceRequests []ResourceRequest) (map[string]interface{}, error) {
+func (s *Scheduler) ReserveResources(hostID string, force bool, resourceRequests []ResourceRequest, gpu int) (map[string]interface{}, error) {
 	s.globalMu.RLock()
 	defer s.globalMu.RUnlock()
 	s.mu.Lock()
