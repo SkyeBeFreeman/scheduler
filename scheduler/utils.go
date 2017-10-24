@@ -100,6 +100,20 @@ func GetUsedResourcesByHost(client metadata.Client) (map[string]map[string]int64
 		usedRes[instancePool]++
 		usedRes[memoryPool] += c.MemoryReservation
 		usedRes[cpuPool] += c.MilliCPUReservation
+
+		// 如果有gpu标签，则赋值，否则算作0
+		gpuStr, ok := c.Labels["gpu"]
+		if ok {
+			gpu, err := strconv.ParseInt(gpuStr, 10, 64)
+			if err != nil {
+				usedRes[gpuPool] += 0
+			} else {
+				usedRes[gpuPool] += gpu
+			}
+		} else {
+			usedRes[gpuPool] += 0
+		}
+
 	}
 
 	return resourcesByHost, nil

@@ -16,6 +16,7 @@ const (
 	instancePool            = "instanceReservation"
 	memoryPool              = "memoryReservation"
 	cpuPool                 = "cpuReservation"
+	gpuPool                 = "gpuReservation"
 	storageSize             = "storageSize"
 	portPool                = "portReservation"
 	totalAvailableInstances = 1000000
@@ -245,6 +246,7 @@ func (s *Scheduler) UpdateWithMetadata(force bool) (bool, error) {
 				cpuPool:      h.MilliCPU,
 				memoryPool:   h.Memory,
 				storageSize:  h.LocalStorageMb,
+				gpuPool:      8,
 			}
 
 			for resourceKey, total := range poolInits {

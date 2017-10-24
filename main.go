@@ -14,8 +14,8 @@ import (
 	"github.com/rancher/go-rancher/v2"
 	"github.com/rancher/scheduler/events"
 	"github.com/rancher/scheduler/resourcewatchers"
-	"github.com/rancher/scheduler/scheduler"
 	"github.com/urfave/cli"
+	"github.com/rancher/scheduler/scheduler"
 )
 
 var VERSION = "v0.1.0-dev"

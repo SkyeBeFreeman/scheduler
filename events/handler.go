@@ -25,7 +25,10 @@ func (h *schedulingHandler) Reserve(event *revents.Event, client *client.Rancher
 	if err != nil {
 		return errors.Wrapf(err, "Error decoding reserve event %v.", event)
 	}
-
+	if len(data.Context) > 0 {
+		// get container gpu tag
+		logrus.Infof("TTTTTTTTTTTT OUTPUT: %s", data.Context[0].Data.Fields.Labels["gpu"])
+	}
 	result, err := h.scheduler.ReserveResources(data.HostID, data.Force, data.ResourceRequests)
 	if err != nil {
 		return errors.Wrapf(err, "Error reserving resources. Event: %v.", event)
@@ -53,7 +56,6 @@ func (h *schedulingHandler) Prioritize(event *revents.Event, client *client.Ranc
 	if err != nil {
 		return errors.Wrapf(err, "Error decoding prioritize event %v.", event)
 	}
-
 	for i := 0; i < 5; i++ {
 		_, err = h.scheduler.UpdateWithMetadata(false)
 		if err != nil {
