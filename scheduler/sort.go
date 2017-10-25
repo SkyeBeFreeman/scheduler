@@ -1,6 +1,8 @@
 package scheduler
 
-import "sort"
+import (
+	"sort"
+)
 
 func filter(hosts map[string]*host, resourceRequests []ResourceRequest) []*host {
 	filtered := []*host{}

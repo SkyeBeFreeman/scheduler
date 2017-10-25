@@ -117,7 +117,7 @@ func (s *SchedulerTestSuite) TestForceReserve(c *check.C) {
 	})
 	c.Check(err, check.IsNil)
 
-	_, err = scheduler.ReserveResources("1", true, []ResourceRequest{AmountBasedResourceRequest{Amount: 10, Resource: "memory"}}, 0)
+	_, err = scheduler.ReserveResources("1", true, []ResourceRequest{AmountBasedResourceRequest{Amount: 10, Resource: "memory"}})
 	c.Assert(err, check.IsNil)
 	c.Assert(scheduler.hosts["1"].pools["memory"].(*ComputeResourcePool).Used, check.Equals, int64(10)) // assert that we over-committed
 }
@@ -184,21 +184,21 @@ func (s *SchedulerTestSuite) TestBadResourceReservation(c *check.C) {
 	c.Check(err, check.ErrorMatches, ".*already exists.*")
 
 	// host doesn't exist
-	_, err = scheduler.ReserveResources("2", false, []ResourceRequest{AmountBasedResourceRequest{Amount: 1, Resource: "memory"}}, 0)
+	_, err = scheduler.ReserveResources("2", false, []ResourceRequest{AmountBasedResourceRequest{Amount: 1, Resource: "memory"}})
 	c.Assert(err, check.IsNil)
 	err = scheduler.ReleaseResources("2", []ResourceRequest{AmountBasedResourceRequest{Amount: 1, Resource: "memory"}})
 	c.Assert(err, check.IsNil)
 
 	// pool doesn't exist on host
-	_, err = scheduler.ReserveResources("1", false, []ResourceRequest{AmountBasedResourceRequest{Amount: 1, Resource: "network"}}, 0)
+	_, err = scheduler.ReserveResources("1", false, []ResourceRequest{AmountBasedResourceRequest{Amount: 1, Resource: "network"}})
 	c.Assert(err, check.IsNil)
 	err = scheduler.ReleaseResources("1", []ResourceRequest{AmountBasedResourceRequest{Amount: 1, Resource: "network"}})
 	c.Assert(err, check.IsNil)
 
 	// Can't reserve more than is available
-	_, err = scheduler.ReserveResources("1", false, []ResourceRequest{AmountBasedResourceRequest{Amount: 1, Resource: "storage.size"}, AmountBasedResourceRequest{Amount: 1, Resource: "memory"}}, 0)
+	_, err = scheduler.ReserveResources("1", false, []ResourceRequest{AmountBasedResourceRequest{Amount: 1, Resource: "storage.size"}, AmountBasedResourceRequest{Amount: 1, Resource: "memory"}})
 	c.Assert(err, check.IsNil)
-	_, err = scheduler.ReserveResources("1", false, []ResourceRequest{AmountBasedResourceRequest{Amount: 1, Resource: "storage.size"}, AmountBasedResourceRequest{Amount: 4, Resource: "memory"}}, 0)
+	_, err = scheduler.ReserveResources("1", false, []ResourceRequest{AmountBasedResourceRequest{Amount: 1, Resource: "storage.size"}, AmountBasedResourceRequest{Amount: 4, Resource: "memory"}})
 	c.Assert(err, check.FitsTypeOf, OverReserveError{})
 	c.Assert(err, check.ErrorMatches, ".*memory.*")
 	// Assert that we rollback correctly
@@ -238,18 +238,18 @@ func (s *SchedulerTestSuite) TestPortReservation(c *check.C) {
 
 	id := 0
 	specs := []PortSpec{{PublicPort: 8081, PrivatePort: 8081, Protocol: "tcp"}, {PublicPort: 8082, PrivatePort: 8082, Protocol: "tcp"}}
-	data, err := scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}}, 0)
+	data, err := scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}})
 	c.Assert(err, check.IsNil)
 	c.Assert(data["portReservation"].([]map[string]interface{})[0]["allocatedIPs"], check.HasLen, 2)
 	id++
 
-	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}}, 0)
+	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}})
 	c.Assert(err, check.IsNil)
 	c.Assert(data["portReservation"].([]map[string]interface{})[0]["allocatedIPs"], check.HasLen, 2)
 	id++
 
 	// the next action should error out, since there is no port available
-	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}}, 0)
+	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}})
 	c.Assert(err, check.NotNil)
 	id++
 
@@ -258,13 +258,13 @@ func (s *SchedulerTestSuite) TestPortReservation(c *check.C) {
 	c.Assert(err, check.IsNil)
 	id++
 
-	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}}, 0)
+	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}})
 	c.Assert(err, check.NotNil)
 	id++
 
 	// test roll back logic
 	specs = []PortSpec{{PublicPort: 8083, PrivatePort: 8083, Protocol: "tcp"}, {PublicPort: 8081, PrivatePort: 8081, Protocol: "tcp"}, {PublicPort: 8081, PrivatePort: 8081, IPAddress: "192.168.1.2", Protocol: "tcp"}}
-	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}}, 0)
+	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}})
 	c.Assert(err, check.NotNil)
 	// assert that we still have 2 slots for 8083, bc it just rolled back
 	c.Assert(getPortSlots(scheduler.hosts["1"].pools["portReservation"].(*PortResourcePool), 8083, "tcp"), check.Equals, 2)
@@ -272,7 +272,7 @@ func (s *SchedulerTestSuite) TestPortReservation(c *check.C) {
 
 	// test random port allocation
 	specs = []PortSpec{{PrivatePort: 8083, Protocol: "tcp"}}
-	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}}, 0)
+	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}})
 	port := data["portReservation"].([]map[string]interface{})[0]["allocatedIPs"].([]map[string]interface{})[0]["publicPort"].(int64)
 	if port < 32768 || port > 61000 {
 		c.Fatalf("Random Port Allocation failed. Port allocated %v", port)
@@ -281,19 +281,19 @@ func (s *SchedulerTestSuite) TestPortReservation(c *check.C) {
 
 	// test 192.168.1.1:8084:8084, should only reserve port from 192.168.1.1
 	specs = []PortSpec{{IPAddress: "192.168.1.1", PublicPort: 8084, PrivatePort: 8084, Protocol: "tcp"}}
-	_, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}}, 0)
+	_, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}})
 	c.Assert(getPortSlots(scheduler.hosts["1"].pools["portReservation"].(*PortResourcePool), 8084, "tcp"), check.Equals, 1)
 	id++
 
 	// test 0.0.0.0:8084:8084, should reserve port on all ip4 address
 	specs = []PortSpec{{IPAddress: "0.0.0.0", PublicPort: 8085, PrivatePort: 8085, Protocol: "tcp"}}
-	_, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}}, 0)
+	_, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}})
 	c.Assert(getPortSlots(scheduler.hosts["1"].pools["portReservation"].(*PortResourcePool), 8085, "tcp"), check.Equals, 0)
 	id++
 
 	// test ghost map reservation
 	specs = []PortSpec{{IPAddress: "192.168.1.5", PublicPort: 8085, PrivatePort: 8085, Protocol: "tcp"}}
-	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}}, 0)
+	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}})
 	ip := data["portReservation"].([]map[string]interface{})[0]["allocatedIPs"].([]map[string]interface{})[0]["allocatedIP"].(string)
 	c.Assert(ip, check.Equals, "192.168.1.5")
 	c.Assert(err, check.IsNil)
@@ -301,7 +301,7 @@ func (s *SchedulerTestSuite) TestPortReservation(c *check.C) {
 
 	// should fail because we have reserved on ghost map
 	specs = []PortSpec{{IPAddress: "192.168.1.5", PublicPort: 8085, PrivatePort: 8085, Protocol: "tcp"}}
-	_, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: "2", ResourceUUID: "12346", Resource: "portReservation", PortRequests: specs}}, 0)
+	_, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: "2", ResourceUUID: "12346", Resource: "portReservation", PortRequests: specs}})
 	c.Assert(err, check.NotNil)
 }
 
@@ -329,28 +329,28 @@ func (s *SchedulerTestSuite) TestPortReservationProtocol(c *check.C) {
 	id := 0
 	// reserve 8081 on 192.168.1.1 for tcp
 	specs := []PortSpec{{IPAddress: "192.168.1.1", PublicPort: 8081, PrivatePort: 8081, Protocol: "tcp"}}
-	data, err := scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: string(id), Resource: "portReservation", PortRequests: specs}}, 0)
+	data, err := scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: string(id), Resource: "portReservation", PortRequests: specs}})
 	c.Assert(err, check.IsNil)
 	c.Assert(data["portReservation"].([]map[string]interface{})[0]["allocatedIPs"], check.HasLen, 1)
 	id++
 
 	// reserve 8081 on 192.168.1.1 for udp, should succeed
 	specs = []PortSpec{{IPAddress: "192.168.1.1", PublicPort: 8081, PrivatePort: 8081, Protocol: "udp"}}
-	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}}, 0)
+	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}})
 	c.Assert(err, check.IsNil)
 	c.Assert(data["portReservation"].([]map[string]interface{})[0]["allocatedIPs"], check.HasLen, 1)
 	id++
 
 	// should succeed on another ip
 	specs = []PortSpec{{PublicPort: 8081, PrivatePort: 8081, Protocol: "udp"}, {PublicPort: 8081, PrivatePort: 8081, Protocol: "tcp"}}
-	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: "2", ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}}, 0)
+	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: "2", ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}})
 	c.Assert(err, check.IsNil)
 	c.Assert(data["portReservation"].([]map[string]interface{})[0]["allocatedIPs"], check.HasLen, 2)
 	id++
 
 	// should fail
 	specs = []PortSpec{{PublicPort: 8081, PrivatePort: 8081, Protocol: "udp"}}
-	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: "3", ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}}, 0)
+	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: "3", ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}})
 	c.Assert(err, check.NotNil)
 	id++
 
@@ -362,19 +362,19 @@ func (s *SchedulerTestSuite) TestPortReservationProtocol(c *check.C) {
 
 	// should fail becase we only release udp
 	specs = []PortSpec{{PublicPort: 8081, PrivatePort: 8081, Protocol: "tcp"}}
-	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}}, 0)
+	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}})
 	c.Assert(err, check.NotNil)
 	id++
 
 	//should succeed
 	specs = []PortSpec{{PublicPort: 8081, PrivatePort: 8081, Protocol: "udp"}}
-	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}}, 0)
+	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}})
 	c.Assert(err, check.IsNil)
 	id++
 
 	// reserve tcp and udp at the same time
 	specs = []PortSpec{{PublicPort: 8083, PrivatePort: 8083, Protocol: "udp"}, {PublicPort: 8083, PrivatePort: 8083, Protocol: "tcp"}}
-	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}}, 0)
+	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}})
 	c.Assert(err, check.IsNil)
 	// assert both return the same ip
 	ip1 := data["portReservation"].([]map[string]interface{})[0]["allocatedIPs"].([]map[string]interface{})[0]["allocatedIP"].(string)
@@ -384,13 +384,13 @@ func (s *SchedulerTestSuite) TestPortReservationProtocol(c *check.C) {
 
 	// reserve tcp on ghost map
 	specs = []PortSpec{{PublicPort: 8083, PrivatePort: 8083, Protocol: "udp", IPAddress: "192.168.1.10"}}
-	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}}, 0)
+	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}})
 	c.Assert(err, check.IsNil)
 	id++
 
 	// should still be able to reserve on tcp
 	specs = []PortSpec{{PublicPort: 8083, PrivatePort: 8083, Protocol: "tcp", IPAddress: "192.168.1.10"}}
-	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}}, 0)
+	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}})
 	c.Assert(err, check.IsNil)
 	id++
 
@@ -402,7 +402,7 @@ func (s *SchedulerTestSuite) TestPortReservationProtocol(c *check.C) {
 
 	// reserve it again, should succeed
 	specs = []PortSpec{{PublicPort: 8083, PrivatePort: 8083, Protocol: "tcp", IPAddress: "192.168.1.10"}}
-	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}}, 0)
+	data, err = scheduler.ReserveResources("1", false, []ResourceRequest{PortBindingResourceRequest{InstanceID: string(id), ResourceUUID: "u" + string(id), Resource: "portReservation", PortRequests: specs}})
 	c.Assert(err, check.IsNil)
 }
 
@@ -475,7 +475,7 @@ func (s *SchedulerTestSuite) TestReservePortsWithGhostIPEntry(c *check.C) {
 	result, err := scheduler.PrioritizeCandidates(rrequests, Context{})
 	c.Assert(result, check.HasLen, 0)
 
-	_, err = scheduler.ReserveResources("1", false, rrequests, 0)
+	_, err = scheduler.ReserveResources("1", false, rrequests)
 	c.Assert(err, check.NotNil)
 	c.Assert(err, check.ErrorMatches, ".*Port is used by IP 192.168.1.1.*")
 }
@@ -499,7 +499,7 @@ func (s *SchedulerTestSuite) TestReleaseNoop(c *check.C) {
 	// container A sends 80:80 requests
 	specs := []PortSpec{{PublicPort: 80, PrivatePort: 80, Protocol: "tcp"}}
 	r1 := []ResourceRequest{PortBindingResourceRequest{InstanceID: "1", ResourceUUID: "12", Resource: "portReservation", PortRequests: specs}}
-	_, err = scheduler.ReserveResources("1", false, r1, 0)
+	_, err = scheduler.ReserveResources("1", false, r1)
 	c.Assert(err, check.IsNil)
 
 	// release A
@@ -511,7 +511,7 @@ func (s *SchedulerTestSuite) TestReleaseNoop(c *check.C) {
 	// container B sends 80:80
 	specs = []PortSpec{{PublicPort: 80, PrivatePort: 80, Protocol: "tcp"}}
 	r3 := []ResourceRequest{PortBindingResourceRequest{InstanceID: "2", ResourceUUID: "13", Resource: "portReservation", PortRequests: specs}}
-	_, err = scheduler.ReserveResources("1", false, r3, 0)
+	_, err = scheduler.ReserveResources("1", false, r3)
 	c.Assert(err, check.IsNil)
 
 	// release A
@@ -559,20 +559,20 @@ func (s *SchedulerTestSuite) TestPortCornerCase(c *check.C) {
 
 	specs := []PortSpec{{IPAddress: "192.168.1.1", PublicPort: 8080, PrivatePort: 8080, Protocol: "tcp"}}
 	r1 := []ResourceRequest{PortBindingResourceRequest{InstanceID: "1", ResourceUUID: "12", Resource: "portReservation", PortRequests: specs}}
-	_, err = scheduler.ReserveResources("1", false, r1, 0)
+	_, err = scheduler.ReserveResources("1", false, r1)
 	c.Assert(err, check.NotNil)
 
 	// reserve 0.0.0.0 on host 2, both ip 192.168.1.1 and 192.168.1.2 should be reserved on 8080
 	specs = []PortSpec{{IPAddress: "0.0.0.0", PublicPort: 8080, PrivatePort: 8080, Protocol: "tcp"}}
 	r2 := []ResourceRequest{PortBindingResourceRequest{InstanceID: "2", ResourceUUID: "123", Resource: "portReservation", PortRequests: specs}}
-	_, err = scheduler.ReserveResources("2", false, r2, 0)
+	_, err = scheduler.ReserveResources("2", false, r2)
 	c.Assert(err, check.IsNil)
 	c.Assert(getPortSlots(scheduler.hosts["2"].pools["portReservation"].(*PortResourcePool), 8080, "tcp"), check.Equals, 0)
 
 	//reserve 192.168.1.3:8080:8080 should fail
 	specs = []PortSpec{{IPAddress: "192.168.1.3", PublicPort: 8080, PrivatePort: 8080, Protocol: "tcp"}}
 	r3 := []ResourceRequest{PortBindingResourceRequest{InstanceID: "3", ResourceUUID: "124", Resource: "portReservation", PortRequests: specs}}
-	_, err = scheduler.ReserveResources("2", false, r3, 0)
+	_, err = scheduler.ReserveResources("2", false, r3)
 	c.Assert(err, check.NotNil)
 
 	// release 0.0.0.0 should release all the pools
@@ -690,7 +690,7 @@ func checkPrioritizationAndReserve(scheduler *Scheduler, tests []rezTest, c *che
 		c.Assert(actual, check.DeepEquals, t.expected)
 
 		if len(t.expected) > 0 {
-			_, err = scheduler.ReserveResources(t.expected[0], t.force, t.resourceRequests, 0)
+			_, err = scheduler.ReserveResources(t.expected[0], t.force, t.resourceRequests)
 			c.Assert(err, check.IsNil)
 		}
 	}
