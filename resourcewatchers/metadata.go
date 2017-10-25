@@ -8,6 +8,7 @@ import (
 	"github.com/rancher/go-rancher-metadata/metadata"
 	"github.com/rancher/go-rancher/v2"
 	"github.com/rancher/scheduler/scheduler"
+	"strconv"
 )
 
 func WatchMetadata(client metadata.Client, updater scheduler.ResourceUpdater, rclient *client.RancherClient) error {
@@ -44,6 +45,7 @@ const (
 	hostLabels              string = "hostLabels"
 	ipLabel                 string = "io.rancher.scheduler.ips"
 	schedulerUpdate         string = "scheduler.update"
+	maxValue                int64  = 9223372036854775807
 )
 
 func (w *metadataWatcher) updateFromMetadata(mdVersion string) {
@@ -79,7 +81,16 @@ func (w *metadataWatcher) updateFromMetadata(mdVersion string) {
 			cpuPool:      h.MilliCPU,
 			memoryPool:   h.Memory,
 			storageSize:  h.LocalStorageMb,
-			gpuPool:      8,
+			gpuPool:      maxValue,
+		}
+		// 如果有gpu标签，则赋值，否则算作0
+		gpuStr, ok := h.Labels["gpuReservation"]
+		if ok {
+			//logrus.Infof("DEBUG gpu LABEL: %s", h.Labels["gpuReservation"])
+			gpuReservation, err := strconv.ParseInt(gpuStr, 10, 64)
+			if err == nil {
+				poolInits[gpuPool] = gpuReservation
+			}
 		}
 
 		for resourceKey, total := range poolInits {
