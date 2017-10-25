@@ -14,7 +14,7 @@ import (
 	"github.com/rancher/go-rancher/v2"
 	"github.com/rancher/scheduler/events"
 	"github.com/rancher/scheduler/resourcewatchers"
-	"github.com/skyebefreeman/scheduler/scheduler"
+	"github.com/rancher/scheduler/scheduler"
 	"github.com/urfave/cli"
 )
 
@@ -97,7 +97,7 @@ func run(c *cli.Context) error {
 	go func() {
 		for {
 			t.Sleep(t.Minute * 3)
-			logrus.Info("Syncing scheduler information with rancher metadata")
+			logrus.Info("main.go: Syncing scheduler information with rancher metadata")
 			for {
 				ok, err := scheduler.UpdateWithMetadata(true)
 				if err != nil {

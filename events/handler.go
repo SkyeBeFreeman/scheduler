@@ -9,6 +9,7 @@ import (
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
 	"github.com/rancher/scheduler/scheduler"
+	"strconv"
 )
 
 const (
@@ -25,11 +26,23 @@ func (h *schedulingHandler) Reserve(event *revents.Event, client *client.Rancher
 	if err != nil {
 		return errors.Wrapf(err, "Error decoding reserve event %v.", event)
 	}
+	var gpu int = 0
 	if len(data.Context) > 0 {
-		// get container gpu tag
-		logrus.Infof("TTTTTTTTTTTT OUTPUT: %s", data.Context[0].Data.Fields.Labels["gpu"])
+		// 如果有gpu标签，则赋值，否则算作0
+		gpuStr, ok := data.Context[0].Data.Fields.Labels["gpu"]
+		if ok {
+			logrus.Infof("DEBUG gpu LABEL: %s", data.Context[0].Data.Fields.Labels["gpu"])
+			gpuTemp, err := strconv.ParseInt(gpuStr, 10, 64)
+			if err != nil {
+				gpu = 0
+			} else {
+				gpu = int(gpuTemp)
+			}
+		} else {
+			gpu = 0
+		}
 	}
-	result, err := h.scheduler.ReserveResources(data.HostID, data.Force, data.ResourceRequests, 2)
+	result, err := h.scheduler.ReserveResources(data.HostID, data.Force, data.ResourceRequests, gpu)
 	if err != nil {
 		return errors.Wrapf(err, "Error reserving resources. Event: %v.", event)
 	}
@@ -146,7 +159,6 @@ func decodeEvent(event *revents.Event, key string) (*schedulerData, error) {
 			}
 			result.Context = context
 		}
-		logrus.Infof("TTTTTTTT %s", result)
 		return result, nil
 	}
 	return nil, fmt.Errorf("Event doesn't contain %v data. Event: %#v", key, event)

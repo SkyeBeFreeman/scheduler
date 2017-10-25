@@ -38,6 +38,7 @@ const (
 	instancePool            string = "instanceReservation"
 	memoryPool              string = "memoryReservation"
 	cpuPool                 string = "cpuReservation"
+	gpuPool                 string = "gpuReservation"
 	storageSize             string = "storageSize"
 	totalAvailableInstances int64  = 1000000
 	hostLabels              string = "hostLabels"
@@ -78,6 +79,7 @@ func (w *metadataWatcher) updateFromMetadata(mdVersion string) {
 			cpuPool:      h.MilliCPU,
 			memoryPool:   h.Memory,
 			storageSize:  h.LocalStorageMb,
+			gpuPool:      8,
 		}
 
 		for resourceKey, total := range poolInits {
