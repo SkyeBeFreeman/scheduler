@@ -10,6 +10,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/go-rancher-metadata/metadata"
+	"strconv"
 )
 
 const (
@@ -27,6 +28,7 @@ const (
 	labelPool               = "labelPool"
 	defaultIP               = "0.0.0.0"
 	ipLabel                 = "io.rancher.scheduler.ips"
+	maxValue                = 9223372036854775807
 )
 
 type host struct {
@@ -246,7 +248,17 @@ func (s *Scheduler) UpdateWithMetadata(force bool) (bool, error) {
 				cpuPool:      h.MilliCPU,
 				memoryPool:   h.Memory,
 				storageSize:  h.LocalStorageMb,
-				gpuPool:      8,
+				gpuPool:      maxValue,
+			}
+			// 如果有gpu标签，则赋值，否则算作0
+			//poolInits[gpuPool] = 10000
+			gpuStr, ok := h.Labels["gpuReservation"]
+			if ok {
+				//logrus.Infof("DEBUG gpu LABEL: %s", h.Labels["gpuReservation"])
+				gpuReservation, err := strconv.ParseInt(gpuStr, 10, 64)
+				if err == nil {
+					poolInits[gpuPool] = gpuReservation
+				}
 			}
 
 			for resourceKey, total := range poolInits {

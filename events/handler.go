@@ -143,13 +143,14 @@ func decodeEvent(event *revents.Event, key string) (*schedulerData, error) {
 			}
 			result.Context = context
 		}
+
+		// 添加gpu信息
 		if phase == "instance.allocate" || phase == "instance.deallocate" {
-			// 添加gpu信息
 			if len(result.Context) > 0 {
 				// 如果有gpu标签，则赋值，否则算作0
 				gpuStr, ok := result.Context[0].Data.Fields.Labels["gpu"]
 				if ok {
-					logrus.Infof("DEBUG gpu LABEL: %s", result.Context[0].Data.Fields.Labels["gpu"])
+					//logrus.Infof("DEBUG gpu LABEL: %s", result.Context[0].Data.Fields.Labels["gpu"])
 					gpu, err := strconv.ParseInt(gpuStr, 10, 64)
 					if err == nil {
 						gpuRequest := scheduler.AmountBasedResourceRequest{}
@@ -161,6 +162,7 @@ func decodeEvent(event *revents.Event, key string) (*schedulerData, error) {
 			}
 
 		}
+
 		return result, nil
 	}
 	return nil, fmt.Errorf("Event doesn't contain %v data. Event: %#v", key, event)
