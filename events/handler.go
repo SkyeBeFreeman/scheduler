@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
-	"github.com/skyebefreeman/scheduler/scheduler"
+	"github.com/rancher/scheduler/scheduler"
 )
 
 const (

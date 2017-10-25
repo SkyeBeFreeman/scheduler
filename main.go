@@ -14,7 +14,7 @@ import (
 	"github.com/rancher/go-rancher/v2"
 	"github.com/rancher/scheduler/events"
 	"github.com/rancher/scheduler/resourcewatchers"
-	"github.com/rancher/scheduler/scheduler"
+	"github.com/skyebefreeman/scheduler/scheduler"
 	"github.com/urfave/cli"
 )
 
