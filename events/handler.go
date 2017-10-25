@@ -26,23 +26,8 @@ func (h *schedulingHandler) Reserve(event *revents.Event, client *client.Rancher
 	if err != nil {
 		return errors.Wrapf(err, "Error decoding reserve event %v.", event)
 	}
-	var gpu int = 0
-	if len(data.Context) > 0 {
-		// 如果有gpu标签，则赋值，否则算作0
-		gpuStr, ok := data.Context[0].Data.Fields.Labels["gpu"]
-		if ok {
-			logrus.Infof("DEBUG gpu LABEL: %s", data.Context[0].Data.Fields.Labels["gpu"])
-			gpuTemp, err := strconv.ParseInt(gpuStr, 10, 64)
-			if err != nil {
-				gpu = 0
-			} else {
-				gpu = int(gpuTemp)
-			}
-		} else {
-			gpu = 0
-		}
-	}
-	result, err := h.scheduler.ReserveResources(data.HostID, data.Force, data.ResourceRequests, gpu)
+
+	result, err := h.scheduler.ReserveResources(data.HostID, data.Force, data.ResourceRequests)
 	if err != nil {
 		return errors.Wrapf(err, "Error reserving resources. Event: %v.", event)
 	}
@@ -128,7 +113,6 @@ func decodeEvent(event *revents.Event, key string) (*schedulerData, error) {
 				case computePool:
 					computeRequest := scheduler.AmountBasedResourceRequest{}
 					err := mapstructure.Decode(request, &computeRequest)
-					logrus.Infof("TTTTTTTT %s:%d", computeRequest.Resource, computeRequest.Amount)
 					if err != nil {
 						return nil, err
 					}
@@ -158,6 +142,24 @@ func decodeEvent(event *revents.Event, key string) (*schedulerData, error) {
 				return nil, err
 			}
 			result.Context = context
+		}
+		if phase == "instance.allocate" || phase == "instance.deallocate" {
+			// 添加gpu信息
+			if len(result.Context) > 0 {
+				// 如果有gpu标签，则赋值，否则算作0
+				gpuStr, ok := result.Context[0].Data.Fields.Labels["gpu"]
+				if ok {
+					logrus.Infof("DEBUG gpu LABEL: %s", result.Context[0].Data.Fields.Labels["gpu"])
+					gpu, err := strconv.ParseInt(gpuStr, 10, 64)
+					if err == nil {
+						gpuRequest := scheduler.AmountBasedResourceRequest{}
+						gpuRequest.Resource = "gpuReservation"
+						gpuRequest.Amount = gpu
+						result.ResourceRequests = append(result.ResourceRequests, gpuRequest)
+					}
+				}
+			}
+
 		}
 		return result, nil
 	}
