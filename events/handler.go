@@ -54,6 +54,7 @@ func (h *schedulingHandler) Prioritize(event *revents.Event, client *client.Ranc
 	if err != nil {
 		return errors.Wrapf(err, "Error decoding prioritize event %v.", event)
 	}
+	logrus.Info("handler.go: Syncing scheduler information with rancher metadata")
 	for i := 0; i < 5; i++ {
 		_, err = h.scheduler.UpdateWithMetadata(false)
 		if err != nil {
