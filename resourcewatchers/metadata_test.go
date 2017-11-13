@@ -48,7 +48,7 @@ func (s *MetadataTestSuite) TestWatchMetadata(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(actual, check.DeepEquals, []string{"host-b"})
 
-	_, err = sched.ReserveResources("host-b", false, []scheduler.ResourceRequest{scheduler.AmountBasedResourceRequest{Amount: 2, Resource: "memoryReservation"}})
+	_, err = sched.ReserveResources("host-b", false, []scheduler.ResourceRequest{scheduler.AmountBasedResourceRequest{Amount: 2, Resource: "memoryReservation"}}, nil)
 	c.Assert(err, check.IsNil)
 
 	// Release the initially used memory from host-a
@@ -140,9 +140,9 @@ func (s *MetadataTestSuite) TestIPLabelChange(c *check.C) {
 
 	r1 := []scheduler.ResourceRequest{scheduler.PortBindingResourceRequest{InstanceID: "1", ResourceUUID: "12345", Resource: "portReservation", PortRequests: []scheduler.PortSpec{{PublicPort: 8081, PrivatePort: 8081, Protocol: "tcp"}}}}
 	r2 := []scheduler.ResourceRequest{scheduler.PortBindingResourceRequest{InstanceID: "2", ResourceUUID: "12346", Resource: "portReservation", PortRequests: []scheduler.PortSpec{{PublicPort: 8081, PrivatePort: 8081, Protocol: "tcp"}}}}
-	_, err := sched.ReserveResources("host-a", false, r1)
+	_, err := sched.ReserveResources("host-a", false, r1, nil)
 	c.Assert(err, check.IsNil)
-	_, err = sched.ReserveResources("host-a", false, r2)
+	_, err = sched.ReserveResources("host-a", false, r2, nil)
 	c.Assert(err, check.IsNil)
 }
 

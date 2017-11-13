@@ -101,14 +101,21 @@ func GetUsedResourcesByHost(client metadata.Client) (map[string]map[string]int64
 		usedRes[memoryPool] += c.MemoryReservation
 		usedRes[cpuPool] += c.MilliCPUReservation
 
-		// 如果有gpu标签，则赋值，否则算作0
-		gpuStr, ok := c.Labels["gpu"]
-		if ok {
-			gpu, err := strconv.ParseInt(gpuStr, 10, 64)
-			if err != nil {
-				usedRes[gpuPool] += 0
-			} else {
-				usedRes[gpuPool] += gpu
+		if tempStr, ok := c.Labels["gpu_card"]; ok {
+			var gpuRatio int64 = 1
+			if ratioStr, ratioOk := c.Labels["ratio"]; ratioOk {
+				if ratio, err := strconv.ParseInt(ratioStr, 10, 64); err == nil {
+					gpuRatio = ratio
+				}
+			}
+
+			tempSlice := strings.Split(tempStr, ",")
+			for i := 0; i < len(tempSlice); i++ {
+				if gpuCard, err := strconv.ParseInt(tempSlice[i], 10, 64); err == nil {
+					gpuCardName := "gpu-card" + strconv.Itoa(int(gpuCard))
+					usedRes[gpuCardName] += gpuRatio
+					usedRes[gpuPool] += gpuRatio
+				}
 			}
 		} else {
 			usedRes[gpuPool] += 0

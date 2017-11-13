@@ -28,7 +28,6 @@ const (
 	labelPool               = "labelPool"
 	defaultIP               = "0.0.0.0"
 	ipLabel                 = "io.rancher.scheduler.ips"
-	maxValue                = 9223372036854775807
 )
 
 type host struct {
@@ -83,7 +82,7 @@ func (s *Scheduler) PrioritizeCandidates(resourceRequests []ResourceRequest, con
 	return filteredHosts, nil
 }
 
-func (s *Scheduler) ReserveResources(hostID string, force bool, resourceRequests []ResourceRequest) (map[string]interface{}, error) {
+func (s *Scheduler) ReserveResources(hostID string, force bool, resourceRequests []ResourceRequest, context Context) (map[string]interface{}, error) {
 	s.globalMu.RLock()
 	defer s.globalMu.RUnlock()
 	s.mu.Lock()
@@ -106,7 +105,7 @@ func (s *Scheduler) ReserveResources(hostID string, force bool, resourceRequests
 	executedActions := []ReserveAction{}
 
 	for _, action := range reserveActions {
-		err := action.Reserve(s, resourceRequests, nil, h, force, data)
+		err := action.Reserve(s, resourceRequests, context, h, force, data)
 		executedActions = append(executedActions, action)
 		if err != nil {
 			logrus.Error("Error happens in reserving resource. Rolling back the reservation")
@@ -248,16 +247,19 @@ func (s *Scheduler) UpdateWithMetadata(force bool) (bool, error) {
 				cpuPool:      h.MilliCPU,
 				memoryPool:   h.Memory,
 				storageSize:  h.LocalStorageMb,
-				gpuPool:      maxValue,
+				gpuPool:      int64(0),
 			}
 			// 如果有gpu标签，则赋值，否则算作0
-			//poolInits[gpuPool] = 10000
 			gpuStr, ok := h.Labels["gpuReservation"]
 			if ok {
-				//logrus.Infof("DEBUG gpu LABEL: %s", h.Labels["gpuReservation"])
 				gpuReservation, err := strconv.ParseInt(gpuStr, 10, 64)
 				if err == nil {
-					poolInits[gpuPool] = gpuReservation
+					poolInits[gpuPool] = gpuReservation * 10
+					// init each gpu card
+					for i := 0; i < int(gpuReservation); i++ {
+						gpuCardName := "gpu-card" + strconv.Itoa(i)
+						poolInits[gpuCardName] = 10
+					}
 				}
 			}
 
