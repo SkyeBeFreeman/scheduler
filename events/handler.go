@@ -27,7 +27,7 @@ func (h *schedulingHandler) Reserve(event *revents.Event, client *client.Rancher
 		return errors.Wrapf(err, "Error decoding reserve event %v.", event)
 	}
 
-	result, err := h.scheduler.ReserveResources(data.HostID, data.Force, data.ResourceRequests)
+	result, err := h.scheduler.ReserveResources(data.HostID, data.Force, data.ResourceRequests, data.Context)
 	if err != nil {
 		return errors.Wrapf(err, "Error reserving resources. Event: %v.", event)
 	}
@@ -149,14 +149,19 @@ func decodeEvent(event *revents.Event, key string) (*schedulerData, error) {
 		if phase == "instance.allocate" || phase == "instance.deallocate" {
 			if len(result.Context) > 0 {
 				// 如果有gpu标签，则赋值，否则算作0
-				gpuStr, ok := result.Context[0].Data.Fields.Labels["gpu"]
-				if ok {
+				if gpuStr, ok := result.Context[0].Data.Fields.Labels["gpu"]; ok {
 					//logrus.Infof("DEBUG gpu LABEL: %s", result.Context[0].Data.Fields.Labels["gpu"])
-					gpu, err := strconv.ParseInt(gpuStr, 10, 64)
-					if err == nil {
+					var gpuRatio int64 = 1
+					if ratioStr, ratioOk := result.Context[0].Data.Fields.Labels["ratio"]; ratioOk {
+						if ratio, err := strconv.ParseInt(ratioStr, 10, 64); err == nil {
+							gpuRatio = ratio
+						}
+					}
+
+					if gpu, err := strconv.ParseInt(gpuStr, 10, 64); err == nil {
 						gpuRequest := scheduler.AmountBasedResourceRequest{}
 						gpuRequest.Resource = "gpuReservation"
-						gpuRequest.Amount = gpu
+						gpuRequest.Amount = gpu * gpuRatio
 						result.ResourceRequests = append(result.ResourceRequests, gpuRequest)
 					}
 				}

@@ -4,17 +4,41 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/Sirupsen/logrus"
+	"sort"
+	"strconv"
 )
 
 // ComputeFilter define a filter based on cpu, memory and instance number
 type ComputeFilter struct {
 }
 
+type Pair struct {
+	gpuUsed int64
+	index   int
+}
+
+type Pairs []Pair
+
+func (pairs Pairs) Len() int {
+	return len(pairs)
+}
+
+func (pairs Pairs) Swap(i, j int) {
+	pairs[i], pairs[j] = pairs[j], pairs[i]
+}
+
+func (pairs Pairs) Less(i, j int) bool {
+	return pairs[i].gpuUsed < pairs[j].gpuUsed
+}
+
 func (c ComputeFilter) Filter(scheduler *Scheduler, resourceRequests []ResourceRequest, context Context, hosts []string) []string {
 	filteredHosts := filter(scheduler.hosts, resourceRequests)
 	result := []string{}
 	for _, host := range filteredHosts {
+
 		result = append(result, host.id)
+
+		//result = append(result, host.id)
 	}
 	return result
 }
@@ -27,6 +51,43 @@ type ComputeReserveAction struct {
 func (c *ComputeReserveAction) Reserve(scheduler *Scheduler, requests []ResourceRequest, context Context, host *host, force bool, data map[string]interface{}) error {
 	var err error
 	var reserveLog *bytes.Buffer
+
+	firstSet := false
+	for _, rr := range requests {
+		if rr.GetResourceType() == "instanceReservation" {
+			firstSet = true
+			break
+		}
+	}
+
+	if context != nil && len(context) > 0 && firstSet {
+		if gpuStr, ok := context[0].Data.Fields.Labels["gpu"]; ok {
+			var gpuRatio int64 = 1
+			if ratioStr, ratioOk := context[0].Data.Fields.Labels["ratio"]; ratioOk {
+				if ratio, err := strconv.ParseInt(ratioStr, 10, 64); err == nil {
+					gpuRatio = ratio
+				}
+			}
+
+			if gpuNeeded, err := strconv.ParseInt(gpuStr, 10, 64); err == nil {
+				if gpuPool, ok := host.pools["gpuReservation"]; ok {
+					tempPairs := make(Pairs, int(gpuPool.(*ComputeResourcePool).Total/10))
+					for i := 0; i < len(tempPairs); i++ {
+						gpuCardName := "gpu-card" + strconv.Itoa(i)
+						tempPairs[i] = Pair{host.pools[gpuCardName].(*ComputeResourcePool).Used, i}
+					}
+					sort.Sort(tempPairs)
+
+					for i := 0; i < int(gpuNeeded); i++ {
+						gpuCardName := "gpu-card" + strconv.Itoa(tempPairs[i].index)
+						gpuRequest := AmountBasedResourceRequest{gpuCardName, gpuRatio}
+						requests = append(requests, gpuRequest)
+					}
+				}
+			}
+		}
+	}
+
 	for _, rr := range requests {
 		p, ok := host.pools[rr.GetResourceType()]
 		if !ok {

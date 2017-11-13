@@ -45,7 +45,6 @@ const (
 	hostLabels              string = "hostLabels"
 	ipLabel                 string = "io.rancher.scheduler.ips"
 	schedulerUpdate         string = "scheduler.update"
-	maxValue                int64  = 9223372036854775807
 )
 
 func (w *metadataWatcher) updateFromMetadata(mdVersion string) {
@@ -81,7 +80,7 @@ func (w *metadataWatcher) updateFromMetadata(mdVersion string) {
 			cpuPool:      h.MilliCPU,
 			memoryPool:   h.Memory,
 			storageSize:  h.LocalStorageMb,
-			gpuPool:      maxValue,
+			gpuPool:      0,
 		}
 		// 如果有gpu标签，则赋值，否则算作0
 		gpuStr, ok := h.Labels["gpuReservation"]
@@ -89,7 +88,12 @@ func (w *metadataWatcher) updateFromMetadata(mdVersion string) {
 			//logrus.Infof("DEBUG gpu LABEL: %s", h.Labels["gpuReservation"])
 			gpuReservation, err := strconv.ParseInt(gpuStr, 10, 64)
 			if err == nil {
-				poolInits[gpuPool] = gpuReservation
+				poolInits[gpuPool] = gpuReservation * 10
+				// init each gpu card
+				for i := 0; i < int(gpuReservation); i++ {
+					gpuCardName := "gpu-card" + strconv.Itoa(i)
+					poolInits[gpuCardName] = 10
+				}
 			}
 		}
 
